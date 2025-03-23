@@ -5,7 +5,12 @@
         public int Id { get; set; }
         public int UserId { get; set; }  // References User
 
-        public string MedicalHistory { get; set; }
+        public string? MedicalHistory { get; set; }
+
+        public int? Weight { get; set; }
+
+        public int? Height { get; set; }
+
 
         // Navigation properties
         public virtual User User { get; set; }

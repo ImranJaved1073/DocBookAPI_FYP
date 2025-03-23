@@ -103,6 +103,11 @@ namespace DocBookAPI.Services
             return user!;
         }
 
+        public async Task<User> GetUserAsync(string email)
+        {
+            return (await _context.Users.FirstOrDefaultAsync(u => u.Email == email))!;
+        }
+
         public async Task<bool> DeleteUserAsync(string userId)
         {
             var user = await _context.Users.FindAsync(userId);
@@ -113,6 +118,16 @@ namespace DocBookAPI.Services
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<List<User>> GetAllPatients()
+        {
+            return await _context.Users.Where(u => u.Role == "Patient").ToListAsync();
+        }
+
+        public async Task<List<User>> GetAllDoctors()
+        {
+            return await _context.Users.Where(u => u.Role == "Doctor").ToListAsync();
         }
 
 
