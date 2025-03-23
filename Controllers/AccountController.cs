@@ -13,11 +13,13 @@ namespace DocBookAPI.Controllers
     {
         private readonly IAccountService _authService;
         private readonly IPatientService _patientService;
+        private readonly IDoctorService _doctorService;
 
-        public AccountController(IAccountService authService, IPatientService patientService)
+        public AccountController(IAccountService authService, IPatientService patientService, IDoctorService doctorService)
         {
             _authService = authService;
             _patientService = patientService;
+            _doctorService = doctorService;
         }
 
         [HttpPost("register")]
@@ -48,7 +50,7 @@ namespace DocBookAPI.Controllers
                     User = user,
                     UserId = user.Id
                 };
-                await _patientService.AddDoctorAsync(doctor);
+                await _doctorService.AddDoctorAsync(doctor);
             }
 
             return Ok(result);
