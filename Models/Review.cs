@@ -7,7 +7,7 @@ namespace DocBookAPI.Models
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int ReviewId { get; set; }
+        public int Id { get; set; }
 
         public int PatientId { get; set; } // Foreign Key to Patients
 
