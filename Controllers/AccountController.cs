@@ -25,34 +25,31 @@ namespace DocBookAPI.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDTO model)
         {
-            AuthResponseDto result = await _authService.RegisterAsync(model);
-            if (!result.IsSuccess)
+            var result = await _authService.RegisterAsync(model);
+            if (!result.Succeeded)
             {
                 return BadRequest(result);
             }
-            if (model.Role == "Patient")
+            if (model.Role.ToLower() == "patient")
             {
                 var user = await _authService.GetUserAsync(model.Email);
-                Patient patient = new Patient
+                PatientDTO patient = new PatientDTO
                 {
-                    User = user,
                     UserId = user.Id
                 };
                 await _patientService.AddPatientAsync(patient);
 
             }
 
-            else if (model.Role == "Doctor")
+            else if (model.Role.ToLower() == "doctor")
             {
                 var user = await _authService.GetUserAsync(model.Email);
-                Doctor doctor = new Doctor
+                DoctorDTO doctor = new DoctorDTO
                 {
-                    User = user,
                     UserId = user.Id
                 };
                 await _doctorService.AddDoctorAsync(doctor);
             }
-
             return Ok(result);
         }
 
@@ -74,25 +71,25 @@ namespace DocBookAPI.Controllers
             return Ok(result);
         }
 
-        [HttpGet("all-doctors")]
-        public async Task<IActionResult> GetAllDoctors()
-        {
-            var result = await _authService.GetAllDoctors();
-            return Ok(result);
-        }
+        //[HttpGet("all-doctors")]
+        //public async Task<IActionResult> GetAllDoctors()
+        //{
+        //    var result = await _authService.GetAllDoctors();
+        //    return Ok(result);
+        //}
 
         [Authorize]
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetUser(int id)
+        public async Task<IActionResult> GetUser(string id)
         {
             var result = await _authService.GetUserAsync(id);
             return Ok(result);
         }
 
-        [HttpGet("all-patients")]
-        public async Task<List<User>> GetAllPatients()
-        {
-            return await _authService.GetAllPatients();
-        }
+        //[HttpGet("all-patients")]
+        //public async Task<List<User>> GetAllPatients()
+        //{
+        //    return await _authService.GetAllPatients();
+        //}
     }
 }

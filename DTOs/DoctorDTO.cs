@@ -1,6 +1,6 @@
-﻿namespace DocBookAPI.Models
+﻿namespace DocBookAPI.DTOs
 {
-    public class Doctor
+    public class DoctorDTO
     {
         public int Id { get; set; }
         public string UserId { get; set; }  // References User
@@ -10,11 +10,5 @@
         public int? ExperienceYears { get; set; }
         public decimal? ConsultationFee { get; set; }
         public string? Availability { get; set; } // JSON string for available time slots
-
-        // Navigation properties
-        public virtual ApplicationUser User { get; set; }
-        public virtual Hospital Hospital { get; set; }
-        public virtual ICollection<Appointment> Appointments { get; set; }
-        public virtual ICollection<Review> Reviews { get; set; }
     }
 }

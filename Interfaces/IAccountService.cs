@@ -1,19 +1,20 @@
 ﻿using DocBookAPI.DTOs;
 using DocBookAPI.Models;
+using Microsoft.AspNetCore.Identity;
 
 namespace DocBookAPI.Interfaces
 {
     public interface IAccountService
     {
-        Task<AuthResponseDto> RegisterAsync(RegisterDTO register);
-        Task<AuthResponseDto> AuthenticateUserAsync(LoginDto model);
-        Task<User> UpdateUserProfileAsync(string userId, User updatedUser);
+        Task<IdentityResult> RegisterAsync(RegisterDTO register);
+        Task<AuthResponseDTO> AuthenticateUserAsync(LoginDto model);
+        Task<bool> UpdateUserProfileAsync(ApplicationUser updatedUser);
         Task<bool> DeleteUserAsync(string userId);
-        Task<List<User>> GetAllUsersAsync();
-        Task<User> GetUserAsync(int id);
-        Task<User> GetUserAsync(string email);
-        Task<List<User>> GetAllPatients();
-        Task<List<User>> GetAllDoctors();
+        Task<IEnumerable<ApplicationUser>> GetAllUsersAsync();
+        Task<ApplicationUser> GetUserByIdAsync(string id);
+        Task<ApplicationUser> GetUserAsync(string email);
+        //Task<List<User>> GetAllPatients();
+        //Task<List<User>> GetAllDoctors();
     }
 
 }

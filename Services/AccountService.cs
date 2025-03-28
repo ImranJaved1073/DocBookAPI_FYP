@@ -4,147 +4,155 @@ using DocBookAPI.DTOs;
 using DocBookAPI.Interfaces;
 using DocBookAPI.Models;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 
 namespace DocBookAPI.Services
 {
     public class AccountService : IAccountService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IConfiguration _configuration;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly ILogger<AccountService> _logger;
+        private readonly string _key;
+        private readonly string _issuer;
+        private readonly string _audience;
 
-
-
-        public AccountService(ApplicationDbContext context)
+        public AccountService(IConfiguration configuration, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager, ILogger<AccountService> logger)
         {
-            _context = context;
+            _configuration = configuration;
+            _userManager = userManager;
+            _signInManager = signInManager;
+            _roleManager = roleManager;
+            _logger = logger;
+            _key = _configuration["Jwt:Key"]!;
+            _issuer = _configuration["Jwt:Issuer"]!;
+            _audience = _configuration["Jwt:Audience"]!;
         }
 
-        public async Task<AuthResponseDto> RegisterAsync(RegisterDTO register)
+        public async Task<IdentityResult> RegisterAsync(RegisterDTO registerDTO)
         {
-            if (await _context.Users.AnyAsync(u => u.Email == register.Email))
+            var existingUser = await _userManager.FindByEmailAsync(registerDTO.Email);
+            if (existingUser != null)
             {
-                return new AuthResponseDto { Message = "Email already exists", IsSuccess = false };
+                return IdentityResult.Failed(new IdentityError { Description = "Email already exists" });
             }
-
-            var user = new User
+            var user = new ApplicationUser
             {
-                Email = register.Email,
-                UserName = register.UserName,
-                Role = register.Role,
-                PasswordHash = HashPassword(register.Password),
-                Gender = register.Gender,
+                UserName = registerDTO.UserName,
+                Email = registerDTO.Email,
+                Gender = registerDTO.Gender,
+                EmailConfirmed = true,
             };
-
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
-            return new AuthResponseDto { Message = "User registered successfully", IsSuccess = true };
+            var result = await _userManager.CreateAsync(user, registerDTO.Password);
+            if (result.Succeeded)
+            {
+                await _userManager.AddToRoleAsync(user, registerDTO.Role);
+            }
+            return result;
         }
 
-        //public async Task<AuthResponseDto> AuthenticateUserAsync(LoginDto model)
-        //{
-        //    var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
-
-        //    if (user == null || string.IsNullOrEmpty(user.PasswordHash) || !VerifyPassword(model.Password!, user.PasswordHash))
-        //    {
-        //        return new AuthResponseDto { Message = "Invalid email or password", IsSuccess = false };
-        //    }
-
-        //    return new AuthResponseDto { Message = "Login successful", IsSuccess = true };
-        //}
-
-        public async Task<AuthResponseDto> AuthenticateUserAsync(LoginDto model)
+        public async Task<AuthResponseDTO> AuthenticateUserAsync(LoginDto model)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email && u.PasswordHash == HashPassword(model.Password!));
-
+            var user = await _userManager.FindByEmailAsync(model.Email!);
             if (user == null)
             {
-                return new AuthResponseDto { Message = "Invalid credentials", IsSuccess = false };
+                return new AuthResponseDTO { Message = "Invalid email or password", IsSuccess = false };
             }
-            else
+
+            // 🔹 Ensure email is confirmed
+            if (!user.EmailConfirmed)
             {
-                return new AuthResponseDto { Message = "Login successful", IsSuccess = true };
+                return new AuthResponseDTO { Message = "Please confirm your email before logging in.", IsSuccess = false };
             }
 
+            // 🔹 Ensure user is not locked out
+            if (await _userManager.IsLockedOutAsync(user))
+            {
+                return new AuthResponseDTO { Message = "Your account is locked. Try again later.", IsSuccess = false };
+            }
+
+            // 🔹 Manually check password before attempting login
+            if (!await _userManager.CheckPasswordAsync(user, model.Password!))
+            {
+                await _userManager.AccessFailedAsync(user); // Increase failed attempt count
+                return new AuthResponseDTO { Message = "Invalid email or password", IsSuccess = false };
+            }
+
+            // ✅ Reset failed attempt count on successful login
+            await _userManager.ResetAccessFailedCountAsync(user);
+
+            var token = await GenerateJwtToken(user);
+            return new AuthResponseDTO { Token = token, IsSuccess = true, Message = "Login successful" };
         }
 
 
-        //get all users
-        public async Task<List<User>> GetAllUsersAsync()
+        private async Task<string> GenerateJwtToken(ApplicationUser user)
         {
-            return await _context.Users.ToListAsync();
+            var key = Encoding.ASCII.GetBytes(_key);
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new Claim[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, user.Id),
+                    new Claim(ClaimTypes.Email, user.Email!),
+                    new Claim(ClaimTypes.Role, (await _userManager.GetRolesAsync(user)).FirstOrDefault()!)
+                }),
+                Expires = DateTime.UtcNow.AddHours(1),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
+                Issuer = _issuer,
+                Audience = _audience
+            };
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
         }
 
-        public async Task<User> GetUserAsync(int id)
+        public async Task<ApplicationUser> GetUserAsync(string email)
         {
-            return (await _context.Users.FindAsync(id))!;
+            return (await _userManager.FindByEmailAsync(email))!;
         }
 
-        public async Task<User> UpdateUserProfileAsync(string userId, User updatedUser)
+        public async Task<ApplicationUser> GetUserByIdAsync(string id)
         {
-            var user = await _context.Users.FindAsync(userId);
+            return (await _userManager.FindByIdAsync(id))!;
+        }
+
+        public async Task<ApplicationUser> GetUserByUserNameAsync(string userName)
+        {
+            return (await _userManager.FindByNameAsync(userName))!  ;
+        }
+
+        public async Task<IEnumerable<ApplicationUser>> GetAllUsersAsync()
+        {
+            return await _userManager.Users.ToListAsync();
+        }
+
+        public async Task<bool> DeleteUserAsync(string id)
+        {
+            var user = await _userManager.FindByIdAsync(id);
             if (user != null)
             {
-                user.UserName = updatedUser.UserName;
-                user.Email = updatedUser.Email;
-                user.Phone = updatedUser.Phone;
-                user.Address = updatedUser.Address;
-                user.PasswordHash = updatedUser.PasswordHash;
-                user.Address = updatedUser.Address;
-                user.ProfilePicture = updatedUser.ProfilePicture;
-                user.DateOfBirth = updatedUser.DateOfBirth;
-                user.Gender = updatedUser.Gender;
-                user.Role = updatedUser.Role;
-
-                await _context.SaveChangesAsync();
+                await _userManager.DeleteAsync(user);
+                return true;
             }
-            
-            return user!;
+            return false;
         }
 
-        public async Task<User> GetUserAsync(string email)
+        public async Task<bool> UpdateUserProfileAsync(ApplicationUser user)
         {
-            return (await _context.Users.FirstOrDefaultAsync(u => u.Email == email))!;
+            var result = await _userManager.UpdateAsync(user);
+            return result.Succeeded;
         }
 
-        public async Task<bool> DeleteUserAsync(string userId)
-        {
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null)
-            {
-                return false;
-            }
-            _context.Users.Remove(user);
-            await _context.SaveChangesAsync();
-            return true;
-        }
-
-        public async Task<List<User>> GetAllPatients()
-        {
-            return await _context.Users.Where(u => u.Role == "Patient").ToListAsync();
-        }
-
-        public async Task<List<User>> GetAllDoctors()
-        {
-            return await _context.Users.Where(u => u.Role == "Doctor").ToListAsync();
-        }
+        
 
 
-        private string HashPassword(string password)
-        {
-            byte[] salt = Encoding.UTF8.GetBytes("CustomSaltForHashing");
-            return Convert.ToBase64String(KeyDerivation.Pbkdf2(
-                password: password,
-                salt: salt,
-                prf: KeyDerivationPrf.HMACSHA256,
-                iterationCount: 10000,
-                numBytesRequested: 32));
-        }
-
-        private bool VerifyPassword(string password, string storedHash)
-        {
-            return HashPassword(password) == storedHash;
-        }
     }
 }

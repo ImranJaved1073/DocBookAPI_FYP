@@ -1,4 +1,5 @@
-﻿using DocBookAPI.Models;
+﻿using DocBookAPI.DTOs;
+using DocBookAPI.Models;
 
 namespace DocBookAPI.Interfaces
 {
@@ -8,8 +9,8 @@ namespace DocBookAPI.Interfaces
         Task<Doctor> GetDoctorByEmailAsync(string email);
         Task<Doctor> GetDoctorByUserNameAsync(string userName);
         Task<IEnumerable<Doctor>> GetAllDoctorsAsync();
-        Task<Doctor> AddDoctorAsync(Doctor doctor);
-        Task<Doctor> UpdateDoctorAsync(Doctor doctor);
+        Task<DoctorDTO> AddDoctorAsync(DoctorDTO doctor);
+        Task<DoctorDTO> UpdateDoctorAsync(DoctorDTO doctor);
         Task<bool> DeleteDoctorAsync(int id);
     }
 }

@@ -1,4 +1,6 @@
-﻿using DocBookAPI.Data;
+﻿using AutoMapper;
+using DocBookAPI.Data;
+using DocBookAPI.DTOs;
 using DocBookAPI.Interfaces;
 using DocBookAPI.Models;
 using Microsoft.EntityFrameworkCore;
@@ -8,15 +10,18 @@ namespace DocBookAPI.Services
     public class DoctorService : IDoctorService
     {
         private readonly ApplicationDbContext _context;
+        private readonly IMapper _mapper;
 
-        public DoctorService(ApplicationDbContext context)
+        public DoctorService(ApplicationDbContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
 
-        public async Task<Doctor> AddDoctorAsync(Doctor doctor)
+        public async Task<DoctorDTO> AddDoctorAsync(DoctorDTO doctor)
         {
-            await _context.Doctors.AddAsync(doctor);
+            var doctorDTO = _mapper.Map<DoctorDTO, Doctor>(doctor);
+            await _context.Doctors.AddAsync(doctorDTO);
             await _context.SaveChangesAsync();
             return doctor;
         }
@@ -54,9 +59,10 @@ namespace DocBookAPI.Services
             return (await _context.Doctors.FirstOrDefaultAsync(d => d.User.UserName == userName))!;
         }
 
-        public async Task<Doctor> UpdateDoctorAsync(Doctor doctor)
+        public async Task<DoctorDTO> UpdateDoctorAsync(DoctorDTO doctor)
         {
-            _context.Doctors.Update(doctor);
+            var doctorDTO = _mapper.Map<DoctorDTO, Doctor>(doctor);
+            _context.Doctors.Update(doctorDTO);
             await _context.SaveChangesAsync();
             return doctor;
         }
