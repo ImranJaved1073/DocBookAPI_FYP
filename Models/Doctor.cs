@@ -14,7 +14,7 @@
         // Navigation properties
         public virtual ApplicationUser User { get; set; }
         public virtual Hospital Hospital { get; set; }
-        public virtual ICollection<Appointment> Appointments { get; set; }
+        public virtual IEnumerable<Appointment> Appointments { get; set; }
         public virtual ICollection<Review> Reviews { get; set; }
     }
 }

@@ -1,10 +1,11 @@
-﻿using DocBookAPI.Models;
+﻿using DocBookAPI.DTOs;
+using DocBookAPI.Models;
 
 namespace DocBookAPI.Interfaces
 {
     public interface IAppointmentService
     {
-        Task<Appointment> CreateAppointment(Appointment appointment);
+        Task<AppointmentDTO> CreateAppointment(AppointmentDTO appointment);
         Task<Appointment> GetAppointment(int id);
         Task<IEnumerable<Appointment>> GetAppointments();
         Task<bool> UpdateAppointment(Appointment appointment);

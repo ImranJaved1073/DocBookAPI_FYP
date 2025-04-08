@@ -50,7 +50,7 @@ namespace DocBookAPI.Controllers
                 };
                 await _doctorService.AddDoctorAsync(doctor);
             }
-            return Ok(result);
+            return Ok();
         }
 
         [HttpPost("login")]
@@ -70,6 +70,19 @@ namespace DocBookAPI.Controllers
             var result = await _authService.GetAllUsersAsync();
             return Ok(result);
         }
+
+        //get role from token
+        [HttpGet("role")]
+        public async Task<IActionResult> GetRole(string email)
+        {
+            var userRole = await _authService.GetUserRoleAsync(email);
+            if (userRole == null)
+            {
+                return NotFound();
+            }
+            return Ok(new { role = userRole });
+        }
+
 
         //[HttpGet("all-doctors")]
         //public async Task<IActionResult> GetAllDoctors()

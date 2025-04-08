@@ -1,4 +1,6 @@
-﻿using DocBookAPI.Data;
+﻿using AutoMapper;
+using DocBookAPI.Data;
+using DocBookAPI.DTOs;
 using DocBookAPI.Interfaces;
 using DocBookAPI.Models;
 using Microsoft.EntityFrameworkCore;
@@ -9,18 +11,21 @@ namespace DocBookAPI.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger _logger;
+        private readonly IMapper _mapper;
 
-        public PrescriptionService(ApplicationDbContext context, ILogger<PrescriptionService> logger)
+        public PrescriptionService(ApplicationDbContext context, ILogger<PrescriptionService> logger, IMapper mapper)
         {
             _context = context;
             _logger = logger;
+            _mapper = mapper;
         }
 
-        public async Task<Prescription> CreatePrescription(Prescription prescription)
+        public async Task<PrescriptionDTO> CreatePrescription(PrescriptionDTO prescriptiondto)
         {
-            _context.Prescriptions.Add(prescription);
+            var prescription = _mapper.Map<Prescription>(prescriptiondto);
+            await _context.Prescriptions.AddAsync(prescription);
             await _context.SaveChangesAsync();
-            return prescription;
+            return prescriptiondto;
         }
 
         public async Task<Prescription> GetPrescription(int id)

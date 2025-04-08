@@ -1,4 +1,5 @@
-﻿using DocBookAPI.Interfaces;
+﻿using DocBookAPI.DTOs;
+using DocBookAPI.Interfaces;
 using DocBookAPI.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -31,11 +32,12 @@ namespace DocBookAPI.Controllers
         }
 
         [HttpPost("CreateAppointment")]
-        public async Task<IActionResult> CreateAppointment(Appointment appointment)
+        public async Task<IActionResult> CreateAppointment(AppointmentDTO appointment)
         {
             var createdAppointment = await _appointmentService.CreateAppointment(appointment);
             return CreatedAtAction(nameof(GetAppointment), new { id = createdAppointment.Id }, createdAppointment);
         }
+
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateAppointment(int id, Appointment appointment)
         {

@@ -92,6 +92,18 @@ namespace DocBookAPI.Services
             return new AuthResponseDTO { Token = token, IsSuccess = true, Message = "Login successful" };
         }
 
+        // generate a function to get role of a user from the jwt token
+        public async Task<string> GetRoleFromToken(string token)
+        {
+            return await Task.Run(() =>
+            {
+                var handler = new JwtSecurityTokenHandler();
+                var jwtToken = handler.ReadJwtToken(token);
+                var roleClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role);
+                return roleClaim?.Value ?? string.Empty;
+            });
+        }
+
 
         private async Task<string> GenerateJwtToken(ApplicationUser user)
         {
@@ -132,6 +144,18 @@ namespace DocBookAPI.Services
         public async Task<IEnumerable<ApplicationUser>> GetAllUsersAsync()
         {
             return await _userManager.Users.ToListAsync();
+        }
+
+        public async Task<string> GetUserRoleAsync(string email)
+        {
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return string.Empty;
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+            return roles.FirstOrDefault() ?? string.Empty;
         }
 
         public async Task<bool> DeleteUserAsync(string id)

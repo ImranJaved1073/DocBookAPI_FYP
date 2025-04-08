@@ -1,10 +1,11 @@
-﻿using DocBookAPI.Models;
+﻿using DocBookAPI.DTOs;
+using DocBookAPI.Models;
 
 namespace DocBookAPI.Interfaces
 {
     public interface IPrescriptionService
     {
-        Task<Prescription> CreatePrescription(Prescription prescription);
+        Task<PrescriptionDTO> CreatePrescription(PrescriptionDTO prescriptiondto);
         Task<Prescription> GetPrescription(int id);
         Task<IEnumerable<Prescription>> GetPrescriptions();
         Task<bool> UpdatePrescription(Prescription prescription);

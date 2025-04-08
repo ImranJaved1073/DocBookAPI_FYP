@@ -18,12 +18,12 @@ namespace DocBookAPI.Services
             _mapper = mapper;
         }
 
-        public async Task<DoctorDTO> AddDoctorAsync(DoctorDTO doctor)
+        public async Task<DoctorDTO> AddDoctorAsync(DoctorDTO doctorDTO)
         {
-            var doctorDTO = _mapper.Map<DoctorDTO, Doctor>(doctor);
-            await _context.Doctors.AddAsync(doctorDTO);
+            var doctor = _mapper.Map<DoctorDTO, Doctor>(doctorDTO);
+            await _context.Doctors.AddAsync(doctor);
             await _context.SaveChangesAsync();
-            return doctor;
+            return doctorDTO;
         }
 
         public async Task<bool> DeleteDoctorAsync(int id)

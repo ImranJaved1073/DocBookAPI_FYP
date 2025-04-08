@@ -12,7 +12,9 @@ namespace DocBookAPI.Interfaces
         Task<bool> DeleteUserAsync(string userId);
         Task<IEnumerable<ApplicationUser>> GetAllUsersAsync();
         Task<ApplicationUser> GetUserByIdAsync(string id);
+        Task<string> GetUserRoleAsync(string email);
         Task<ApplicationUser> GetUserAsync(string email);
+        Task<string> GetRoleFromToken(string token);
         //Task<List<User>> GetAllPatients();
         //Task<List<User>> GetAllDoctors();
     }

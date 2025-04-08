@@ -13,14 +13,18 @@ namespace DocBookAPI.Controllers
     public class DoctorController : ControllerBase
     {
         private readonly IDoctorService _doctorService;
+        private readonly IAccountService _accountService;
+        private readonly IAppointmentService _appointmentService;
         private readonly ILogger<DoctorController> _logger;
         private readonly IMapper _mapper;
 
-        public DoctorController(IDoctorService doctorService, ILogger<DoctorController> logger, IMapper mapper)
+        public DoctorController(IDoctorService doctorService, ILogger<DoctorController> logger, IMapper mapper, IAccountService accountService, IAppointmentService appointmentService)
         {
             _doctorService = doctorService;
             _logger = logger;
             _mapper = mapper;
+            _accountService = accountService;
+            _appointmentService = appointmentService;
         }
 
         [HttpPost("AddDoctor")]
@@ -80,6 +84,8 @@ namespace DocBookAPI.Controllers
                 var doctor = await _doctorService.GetDoctorByIdAsync(id);
                 if (doctor != null)
                 {
+                    doctor.User= await _accountService.GetUserAsync(doctor.UserId);
+                    doctor.Appointments = await _appointmentService.GetAppointmentsByDoctor(doctor.Id);
                     return Ok(doctor);
                 }
                 return NotFound();

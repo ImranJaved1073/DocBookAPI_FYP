@@ -1,4 +1,6 @@
-﻿using DocBookAPI.Data;
+﻿using AutoMapper;
+using DocBookAPI.Data;
+using DocBookAPI.DTOs;
 using DocBookAPI.Interfaces;
 using DocBookAPI.Models;
 using Microsoft.EntityFrameworkCore;
@@ -8,15 +10,18 @@ namespace DocBookAPI.Services
     public class AppointmentService : IAppointmentService
     {
         private readonly ApplicationDbContext _context;
+        private readonly IMapper _mapper;
 
-        public AppointmentService(ApplicationDbContext context)
+        public AppointmentService(ApplicationDbContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
 
-        public async Task<Appointment> CreateAppointment(Appointment appointment)
+        public async Task<AppointmentDTO> CreateAppointment(AppointmentDTO appointment)
         {
-            _context.Appointments.Add(appointment);
+            var newAppointment = _mapper.Map<Appointment>(appointment);
+            _context.Appointments.Add(newAppointment);
             await _context.SaveChangesAsync();
             return appointment;
         }
