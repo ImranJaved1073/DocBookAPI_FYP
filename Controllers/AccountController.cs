@@ -1,4 +1,5 @@
-﻿using DocBookAPI.DTOs;
+﻿using AutoMapper;
+using DocBookAPI.DTOs;
 using DocBookAPI.Interfaces;
 using DocBookAPI.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -14,12 +15,14 @@ namespace DocBookAPI.Controllers
         private readonly IAccountService _authService;
         private readonly IPatientService _patientService;
         private readonly IDoctorService _doctorService;
+        private readonly IMapper _mapper;
 
-        public AccountController(IAccountService authService, IPatientService patientService, IDoctorService doctorService)
+        public AccountController(IAccountService authService, IPatientService patientService, IDoctorService doctorService, IMapper mapper)
         {
             _authService = authService;
             _patientService = patientService;
             _doctorService = doctorService;
+            _mapper = mapper;
         }
 
         [HttpPost("register")]
@@ -83,6 +86,36 @@ namespace DocBookAPI.Controllers
             return Ok(new { role = userRole });
         }
 
+        [HttpGet("verify-email/{email}")]
+        public async Task<IActionResult> VerifyEmail(string email)
+        {
+            var user = await _authService.GetUserAsync(email);
+            if (user == null)
+            {
+                return NotFound();
+            }
+            return Ok(new { email = user.Email });
+        }
+
+        // reset password
+        [HttpPut("resetPassword")]
+        public async Task<IActionResult> ResetPassword(LoginDto logindto)
+        {
+            var user = await _authService.GetUserAsync(logindto.Email!);
+            if (user == null)
+            {
+                return NotFound();
+            }
+            var result = await _authService.ResetPasswordAsync(user, logindto.Password!);
+            if (!result.Succeeded)
+            {
+                return BadRequest(result);
+            }
+            return Ok(new { success = true });
+
+
+        }
+
 
         //[HttpGet("all-doctors")]
         //public async Task<IActionResult> GetAllDoctors()
@@ -91,13 +124,59 @@ namespace DocBookAPI.Controllers
         //    return Ok(result);
         //}
 
-        [Authorize]
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetUser(string id)
         {
-            var result = await _authService.GetUserAsync(id);
+            var result = await _authService.GetUserByIdAsync(id);
             return Ok(result);
         }
+
+        [HttpPut("updateProfile/{userId}")]
+        public async Task<IActionResult> UpdateProfile(string userId, [FromBody] ProfileDTO model)
+        {
+            var result = await _authService.UpdateUserProfileAsync(userId,model);
+            if (result == null)
+            {
+                return NotFound();
+            }
+            return Ok(result);
+        }
+
+        //[HttpPut("UpdateProfile")]
+        //public async Task<IActionResult> UpdateProfile([FromBody] ProfileDTO model)
+        //{
+        //    var doctor = await _doctorService.GetDoctorByIdAsync(model.Id);
+        //    if (doctor == null)
+        //    {
+        //        return NotFound();
+        //    }
+        //    doctor.Name = model.Name;
+        //    doctor.Bio = model.Bio;
+        //    doctor.Hospital = model.Hospital;
+        //    doctor.Specialization = model.Specialization;
+        //    doctor.Qualification = model.Qualification;
+        //    doctor.ExperienceYears = model.ExperienceYears;
+        //    doctor.ConsultationFee = model.ConsultationFee;
+        //    doctor.Availability = model.Availability;
+        //    var doctordto = _mapper.Map<DoctorDTO>(doctor);
+        //    await _doctorService.UpdateDoctorAsync(doctordto);
+
+        //    ApplicationUser user = await _authService.GetUserAsync(model.UserId);
+        //    if (user == null)
+        //    {
+        //        return NotFound();
+        //    }
+        //    user.ProfilePicture = model.ImageUrl;
+        //    user.DateOfBirth = model.dateOfBirth;
+        //    user.PhoneNumber = model.PhoneNumber;
+        //    user.Address = model.Address;
+        //    await _authService.UpdateUserProfileAsync(user);
+
+        //    return Ok();
+        //}
+
+
 
         //[HttpGet("all-patients")]
         //public async Task<List<User>> GetAllPatients()

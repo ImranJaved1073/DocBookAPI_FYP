@@ -16,6 +16,8 @@ builder.Services.AddAutoMapper(cfg =>
 {
     cfg.CreateMap<DoctorDTO, Doctor>();
     cfg.CreateMap<Doctor, DoctorDTO>();
+    cfg.CreateMap<ApplicationUser, ProfileDTO>();
+    cfg.CreateMap<ProfileDTO, ApplicationUser>();
     cfg.CreateMap<PatientDTO, Patient>();
     cfg.CreateMap<Patient, PatientDTO>();
     cfg.CreateMap<AppointmentDTO, Appointment>();
@@ -77,16 +79,18 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowReactApp",
-        policy => policy.WithOrigins("http://localhost:3000")
-                        .AllowAnyHeader()
-                        .AllowAnyMethod());
+    options.AddPolicy("AllowAll",
+        builder =>
+        {
+            builder.AllowAnyOrigin()
+                   .AllowAnyMethod()
+                   .AllowAnyHeader();
+        });
 });
 
 
 var app = builder.Build();
-
-app.UseCors("AllowReactApp"); // Important: add this before app.UseAuthorization();
+app.UseCors("AllowAll");
 
 var roleManager = app.Services.CreateScope().ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 string[] roles = { "Admin", "Doctor", "Patient" };

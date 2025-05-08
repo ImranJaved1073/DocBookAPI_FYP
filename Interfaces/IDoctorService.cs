@@ -10,7 +10,7 @@ namespace DocBookAPI.Interfaces
         Task<Doctor> GetDoctorByUserNameAsync(string userName);
         Task<IEnumerable<Doctor>> GetAllDoctorsAsync();
         Task<DoctorDTO> AddDoctorAsync(DoctorDTO doctor);
-        Task<DoctorDTO> UpdateDoctorAsync(DoctorDTO doctor);
+        Task<DoctorDTO> UpdateDoctorAsync(int id, DoctorDTO doctorDto);
         Task<bool> DeleteDoctorAsync(int id);
     }
 }

@@ -1,4 +1,5 @@
 ﻿
+using AutoMapper;
 using DocBookAPI.Data;
 using DocBookAPI.DTOs;
 using DocBookAPI.Interfaces;
@@ -20,17 +21,19 @@ namespace DocBookAPI.Services
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly ILogger<AccountService> _logger;
+        private readonly IMapper _mapper;
         private readonly string _key;
         private readonly string _issuer;
         private readonly string _audience;
 
-        public AccountService(IConfiguration configuration, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager, ILogger<AccountService> logger)
+        public AccountService(IConfiguration configuration, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager, ILogger<AccountService> logger, IMapper mapper)
         {
             _configuration = configuration;
             _userManager = userManager;
             _signInManager = signInManager;
             _roleManager = roleManager;
             _logger = logger;
+            _mapper = mapper;
             _key = _configuration["Jwt:Key"]!;
             _issuer = _configuration["Jwt:Issuer"]!;
             _audience = _configuration["Jwt:Audience"]!;
@@ -91,6 +94,8 @@ namespace DocBookAPI.Services
             var token = await GenerateJwtToken(user);
             return new AuthResponseDTO { Token = token, IsSuccess = true, Message = "Login successful" };
         }
+
+
 
         // generate a function to get role of a user from the jwt token
         public async Task<string> GetRoleFromToken(string token)
@@ -169,14 +174,28 @@ namespace DocBookAPI.Services
             return false;
         }
 
-        public async Task<bool> UpdateUserProfileAsync(ApplicationUser user)
+        public async Task<ProfileDTO> UpdateUserProfileAsync(string id,ProfileDTO user)
         {
-            var result = await _userManager.UpdateAsync(user);
-            return result.Succeeded;
+            var existingUser = await _userManager.FindByIdAsync(id);
+
+            var updatedUser = _mapper.Map<ProfileDTO, ApplicationUser>(user);
+
+            if (existingUser != null)
+            {
+                existingUser.Address = updatedUser.Address;
+                existingUser.DateOfBirth = updatedUser.DateOfBirth;
+                existingUser.PhoneNumber = updatedUser.PhoneNumber;
+                await _userManager.UpdateAsync(existingUser);
+            }
+
+            return user;
         }
-
-        
-
+        public async Task<IdentityResult> ResetPasswordAsync(ApplicationUser user, string newPassword)
+        {
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
+            return result;
+        }
 
     }
 }

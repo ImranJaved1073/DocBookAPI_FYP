@@ -55,5 +55,60 @@ namespace DocBookAPI.Controllers
             }
             return NotFound();
         }
+
+        [HttpGet("bydoctor/{doctorId}")]
+        public async Task<IActionResult> GetPrescriptionsByDoctor(int doctorId)
+        {
+            var result = await _prescriptionService.GetPrescriptionsByDoctorId(doctorId);
+            if (result != null)
+            {
+                return Ok(result);
+            }
+            return NotFound();
+        }
+
+        [HttpGet("bypatient/{patientId}")]
+        public async Task<IActionResult> GetPrescriptionsByPatient(int patientId)
+        {
+            var result = await _prescriptionService.GetPrescriptionsByPatientId(patientId);
+            if (result != null)
+            {
+                return Ok(result);
+            }
+            return NotFound();
+        }
+
+        [HttpGet("byappointment/{appointmentId}")]
+        public async Task<IActionResult> GetPrescriptionsByAppointment(int appointmentId)
+        {
+            var result = await _prescriptionService.GetPrescriptionsByAppointmentId(appointmentId);
+            if (result != null)
+            {
+                return Ok(result);
+            }
+            return NotFound();
+        }
+
+        [HttpGet("bydoctorandpatient/{doctorId}/{patientId}")]
+        public async Task<IActionResult> GetPrescriptionsByDoctorAndPatient(int doctorId, int patientId)
+        {
+            var result = await _prescriptionService.GetPrescriptionsByDoctorIdAndPatientId(doctorId, patientId);
+            if (result != null)
+            {
+                return Ok(result);
+            }
+            return NotFound();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAllPrescriptions()
+        {
+            var result = await _prescriptionService.GetPrescriptions();
+            if (result != null)
+            {
+                return Ok(result);
+            }
+            return NotFound();
+        }
     }
 }

@@ -15,16 +15,18 @@ namespace DocBookAPI.Controllers
         private readonly IDoctorService _doctorService;
         private readonly IAccountService _accountService;
         private readonly IAppointmentService _appointmentService;
+        private readonly IReviewService _reviewService;
         private readonly ILogger<DoctorController> _logger;
         private readonly IMapper _mapper;
 
-        public DoctorController(IDoctorService doctorService, ILogger<DoctorController> logger, IMapper mapper, IAccountService accountService, IAppointmentService appointmentService)
+        public DoctorController(IDoctorService doctorService, ILogger<DoctorController> logger, IMapper mapper, IAccountService accountService, IAppointmentService appointmentService, IReviewService reviewService)
         {
             _doctorService = doctorService;
             _logger = logger;
             _mapper = mapper;
             _accountService = accountService;
             _appointmentService = appointmentService;
+            _reviewService = reviewService;
         }
 
         [HttpPost("AddDoctor")]
@@ -67,6 +69,13 @@ namespace DocBookAPI.Controllers
             try
             {
                 var doctors = await _doctorService.GetAllDoctorsAsync();
+                doctors = doctors.Select(d =>
+                {
+                    d.User = _accountService.GetUserAsync(d.UserId).Result;
+                    d.Appointments = _appointmentService.GetAppointmentsByDoctor(d.Id).Result;
+                    d.Reviews = _reviewService.GetReviewsByDoctorId(d.Id).Result;
+                    return d;
+                }).ToList();
                 return Ok(doctors);
             }
             catch (Exception ex)
@@ -86,6 +95,7 @@ namespace DocBookAPI.Controllers
                 {
                     doctor.User= await _accountService.GetUserAsync(doctor.UserId);
                     doctor.Appointments = await _appointmentService.GetAppointmentsByDoctor(doctor.Id);
+                    doctor.Reviews = await _reviewService.GetReviewsByDoctorId(doctor.Id);
                     return Ok(doctor);
                 }
                 return NotFound();
@@ -105,6 +115,9 @@ namespace DocBookAPI.Controllers
                 var doctor = await _doctorService.GetDoctorByEmailAsync(email);
                 if (doctor != null)
                 {
+                    doctor.User = await _accountService.GetUserAsync(doctor.UserId);
+                    doctor.Appointments = await _appointmentService.GetAppointmentsByDoctor(doctor.Id);
+                    doctor.Reviews = await _reviewService.GetReviewsByDoctorId(doctor.Id);
                     return Ok(doctor);
                 }
                 return NotFound();
@@ -124,6 +137,9 @@ namespace DocBookAPI.Controllers
                 var doctor = await _doctorService.GetDoctorByUserNameAsync(userName);
                 if (doctor != null)
                 {
+                    doctor.User = await _accountService.GetUserAsync(doctor.UserId);
+                    doctor.Appointments = await _appointmentService.GetAppointmentsByDoctor(doctor.Id);
+                    doctor.Reviews = await _reviewService.GetReviewsByDoctorId(doctor.Id);
                     return Ok(doctor);
                 }
                 return NotFound();
@@ -135,19 +151,11 @@ namespace DocBookAPI.Controllers
             }
         }
 
-        [HttpPut("UpdateDoctor/{id}")]
-        public async Task<IActionResult> UpdateDoctorAsync(DoctorDTO doctor)
+        [HttpPut("UpdateDoctor/{doctorId}")]
+        public async Task<IActionResult> UpdateDoctorAsync(int doctorId, [FromBody] DoctorDTO doctor)
         {
-            try
-            {
-                var updatedDoctor = await _doctorService.UpdateDoctorAsync(doctor);
+                var updatedDoctor = await _doctorService.UpdateDoctorAsync(doctorId,doctor);
                 return Ok(updatedDoctor);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating doctor");
-                return StatusCode(StatusCodes.Status500InternalServerError, "Error updating doctor");
-            }
         }
 
         // update availability
@@ -162,7 +170,7 @@ namespace DocBookAPI.Controllers
                 {
                     doctor.Availability = availability;
                     var doctorDTO = _mapper.Map<DoctorDTO>(doctor);
-                    var updatedDoctor = await _doctorService.UpdateDoctorAsync(doctorDTO);
+                    var updatedDoctor = await _doctorService.UpdateDoctorAsync(doctorId, doctorDTO);
                     return Ok(updatedDoctor);
                 }
                 return NotFound();

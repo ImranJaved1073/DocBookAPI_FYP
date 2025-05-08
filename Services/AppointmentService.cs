@@ -69,28 +69,88 @@ namespace DocBookAPI.Services
             return await _context.Appointments.Where(a => a.PatientId == patientId).ToListAsync();
         }
 
-        public async Task<IEnumerable<Appointment>> GetAppointmentsByDate(DateTime date)
+        public async Task<IEnumerable<Appointment>> GetAppointmentsByDate(int id, DateTime date)
         {
-            return await _context.Appointments.Where(a => a.AppointmentDate.Date == date.Date).ToListAsync();
+            return await _context.Appointments
+                .Where(a => a.DoctorId == id && a.AppointmentDate.Date == date.Date && a.Status != "cancelled")
+                .ToListAsync();
         }
 
-        public async Task<bool> ChangeAppointmentStatus(int id, string status)
+        public async Task<Appointment> ChangeAppointmentStatus(int id, string status)
         {
             var appointment = await GetAppointment(id);
             if (appointment == null)
             {
-                return false;
+                return null!;
+            }
+            if(appointment.Status.ToLower() == "approved" && status.ToLower() == "approved")
+            {
+                return null!;
             }
             appointment.Status = status;
             _context.Appointments.Update(appointment);
             await _context.SaveChangesAsync();
-            return true;
+            return appointment;
         }
 
-        public async Task<bool> CancelAppointment(int id)
+        public async Task<Appointment> CancelAppointment(int id)
         {
             return await ChangeAppointmentStatus(id, "Cancelled");
         }
 
+        public async Task<Appointment> ApproveAppointment(int id)
+        {
+            return await ChangeAppointmentStatus(id, "Approved");
+        }
+
+        // get book slots of doctor
+        //public async Task<IEnumerable<string>> GetBookedSlots(int doctorId, DateTime date)
+        //{
+        //    var bookedSlots = await _context.Appointments
+        //        .Where(a => a.DoctorId == doctorId && a.AppointmentDate.Date == date.Date)
+        //        .Select(a => a.BookedSlots)
+        //        .ToListAsync();
+
+        //    return bookedSlots;
+        //}
+
+        public async Task<IEnumerable<BookedSlotDTO>> GetBookedSlots(int doctorId, DateTime date)
+        {
+            var bookedSlots = await _context.Appointments
+                .Where(a => a.DoctorId == doctorId && a.AppointmentDate.Date == date.Date)
+                .Select(a => new BookedSlotDTO
+                {
+                    Slot = a.BookedSlots,
+                    Status = a.Status // assuming a.Status is like "booked" or "pending"
+                })
+                .ToListAsync();
+
+            return bookedSlots;
+        }
+
+        // get booked slots of patient
+        public async Task<IEnumerable<BookedSlotDTO>> GetPatientBookedSlots(int patientId, int doctorId, DateTime date)
+        {
+            return await _context.Appointments
+                .Where(a => a.PatientId == patientId && a.DoctorId == doctorId && a.AppointmentDate.Date == date.Date)
+                .Select(a => new BookedSlotDTO
+                {
+                    Slot = a.BookedSlots,
+                    Status = a.Status // assuming a.Status is like "booked" or "pending"
+                })
+                .ToListAsync();
+        }
+
+
+        // get booked slots of doctor
+        //public async Task<IEnumerable<string>> GetBookedSlots(int doctorId, DateTime date, string bookedSlots)
+        //{
+        //    var bookedSlotsList = await _context.Appointments
+        //        .Where(a => a.DoctorId == doctorId && a.AppointmentDate.Date == date.Date)
+        //        .Select(a => a.BookedSlots)
+        //        .ToListAsync();
+        //    bookedSlotsList.Add(bookedSlots);
+        //    return bookedSlotsList;
+        //}
     }
 }

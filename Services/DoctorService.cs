@@ -41,7 +41,9 @@ namespace DocBookAPI.Services
 
         public async Task<IEnumerable<Doctor>> GetAllDoctorsAsync()
         {
-            return await _context.Doctors.ToListAsync();
+            return await _context.Doctors.Where(d => d.Availability != null && d.ConsultationFee != null
+                && d.Specialization != null && d.Qualification != null && 
+                d.Availability != null  && d.ExperienceYears != null).ToListAsync();
         }
 
         public async Task<Doctor> GetDoctorByEmailAsync(string email)
@@ -65,6 +67,29 @@ namespace DocBookAPI.Services
             _context.Doctors.Update(doctorDTO);
             await _context.SaveChangesAsync();
             return doctor;
+        }
+
+        public async Task<DoctorDTO> UpdateDoctorAsync(int id, DoctorDTO doctorDto)
+        {
+            var existingDoctor = await _context.Doctors.FirstOrDefaultAsync(d => d.Id == id);
+
+            var doctor = _mapper.Map<DoctorDTO, Doctor>(doctorDto);
+
+            if (existingDoctor != null)
+            {
+                existingDoctor.Name = doctor.Name;
+                existingDoctor.Bio = doctor.Bio;
+                existingDoctor.Hospital = doctor.Hospital;
+                existingDoctor.Specialization = doctor.Specialization;
+                existingDoctor.Qualification = doctor.Qualification;
+                existingDoctor.ExperienceYears = doctor.ExperienceYears;
+                existingDoctor.ConsultationFee = doctor.ConsultationFee;
+                existingDoctor.Availability = doctor.Availability;
+                _context.Doctors.Update(existingDoctor);
+                await _context.SaveChangesAsync();
+            }
+
+            return doctorDto;
         }
     }
 }

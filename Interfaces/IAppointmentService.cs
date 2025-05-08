@@ -12,9 +12,12 @@ namespace DocBookAPI.Interfaces
         Task<Appointment> DeleteAppointment(int id);
         Task<IEnumerable<Appointment>> GetAppointmentsByDoctor(int doctorId);
         Task<IEnumerable<Appointment>> GetAppointmentsByPatient(int patientId);
-        Task<IEnumerable<Appointment>> GetAppointmentsByDate(DateTime date);
-        Task<bool> ChangeAppointmentStatus(int id, string status);
-        Task<bool> CancelAppointment(int id);
+        Task<IEnumerable<Appointment>> GetAppointmentsByDate(int id, DateTime date);
+        Task<Appointment> ChangeAppointmentStatus(int id, string status);
+        Task<Appointment> CancelAppointment(int id);
+        Task<Appointment> ApproveAppointment(int id);
+        Task<IEnumerable<BookedSlotDTO>> GetBookedSlots(int doctorId, DateTime date);
+        Task<IEnumerable<BookedSlotDTO>> GetPatientBookedSlots(int patientId,int doctorId, DateTime date); 
 
     }
 }

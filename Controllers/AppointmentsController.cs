@@ -1,4 +1,5 @@
 ﻿using DocBookAPI.DTOs;
+using DocBookAPI.Helpers;
 using DocBookAPI.Interfaces;
 using DocBookAPI.Models;
 using Microsoft.AspNetCore.Http;
@@ -11,13 +12,17 @@ namespace DocBookAPI.Controllers
     public class AppointmentsController : ControllerBase
     {
         private readonly IAppointmentService _appointmentService;
+        private readonly IPatientService _patientService;
+        private readonly IDoctorService _doctorService;
 
-        public AppointmentsController(IAppointmentService appointmentService)
+        public AppointmentsController(IAppointmentService appointmentService, IPatientService patientService, IDoctorService doctorService)
         {
+            _patientService = patientService;
             _appointmentService = appointmentService;
+            _doctorService = doctorService;
         }
 
-        [HttpGet]
+        [HttpGet("GetAppointments")]
         public async Task<IActionResult> GetAppointments()
         {
             var appointments = await _appointmentService.GetAppointments();
@@ -31,8 +36,8 @@ namespace DocBookAPI.Controllers
             return Ok(appointment);
         }
 
-        [HttpPost("CreateAppointment")]
-        public async Task<IActionResult> CreateAppointment(AppointmentDTO appointment)
+        [HttpPost("BookAppointment")]
+        public async Task<IActionResult> BookAppointment(AppointmentDTO appointment)
         {
             var createdAppointment = await _appointmentService.CreateAppointment(appointment);
             return CreatedAtAction(nameof(GetAppointment), new { id = createdAppointment.Id }, createdAppointment);
@@ -48,7 +53,7 @@ namespace DocBookAPI.Controllers
             var updatedAppointment = await _appointmentService.UpdateAppointment(appointment);
             return Ok(updatedAppointment);
         }
-        [HttpDelete("{id}")]
+        [HttpDelete("DeleteAppointment/{id}")]
         public async Task<IActionResult> DeleteAppointment(int id)
         {
             var appointment = await _appointmentService.GetAppointment(id);
@@ -59,5 +64,103 @@ namespace DocBookAPI.Controllers
             await _appointmentService.DeleteAppointment(id);
             return NoContent();
         }
+
+        [HttpPut("CancelAppointment/{id}")]
+        public async Task<IActionResult> CancelAppointment(int id)
+        {
+            await _appointmentService.CancelAppointment(id);
+            return NoContent();
+        }
+
+        [HttpPut("ApproveAppointment/{id}")]
+        public async Task<IActionResult> ApproveAppointment(int id)
+        {
+            var appointment = await _appointmentService.ApproveAppointment(id);
+            if (appointment == null)
+            {
+                //appointment already approved
+                return BadRequest("Appointment already approved for other patient so cancel this appointment");
+            }
+            return NoContent();
+        }
+
+        [HttpGet("byPatient/{patientId}")]
+        public async Task<IActionResult> GetAppointmentsByPatient(int patientId)
+        {
+            var appointments = await _appointmentService.GetAppointmentsByPatient(patientId);
+            return Ok(appointments);
+        }
+
+        [HttpGet("byDoctor/{doctorId}")]
+        public async Task<IActionResult> GetAppointmentsByDoctor(int doctorId)
+        {
+            var appointments = await _appointmentService.GetAppointmentsByDoctor(doctorId);
+            return Ok(appointments);
+        }
+
+        [HttpGet("byPatientEmail/{patientEmail}")]
+        public async Task<IActionResult> GetAppointmentsByPatientEmail(string patientEmail)
+        {
+            var patient = await _patientService.GetPatientByEmailAsync(patientEmail);
+            if (patient == null)
+            {
+                return NotFound("Patient not found");
+            }
+            var appointments = await _appointmentService.GetAppointmentsByPatient(patient.Id);
+            return Ok(appointments);
+        }
+
+        [HttpGet("byDoctorEmail/{doctorEmail}")]
+        public async Task<IActionResult> GetAppointmentsByDoctorEmail(string doctorEmail)
+        {
+            var doctor = await _doctorService.GetDoctorByEmailAsync(doctorEmail);
+            if (doctor == null)
+            {
+                return NotFound("Doctor not found");
+            }
+            var appointments = await _appointmentService.GetAppointmentsByDoctor(doctor.Id);
+            return Ok(appointments);
+        }
+
+        [HttpGet("byDate/{doctorEmail}")]
+        public async Task<IActionResult> GetAppointmentsByDate(string doctorEmail, DateTime date)
+        {
+            var doctor = await _doctorService.GetDoctorByEmailAsync(doctorEmail);
+            if (doctor == null)
+            {
+                return NotFound("Doctor not found");
+            }
+            var appointments = await _appointmentService.GetAppointmentsByDate(doctor.Id,date);
+            return Ok(appointments);
+        }
+
+        [HttpGet("GetBookedSlots")]
+        public async Task<IActionResult> GetBookedSlots(int doctorId, DateTime appointmentDate)
+        {
+            var bookedSlots = await _appointmentService.GetBookedSlots(doctorId, appointmentDate);
+            return Ok(bookedSlots);
+        }
+
+        [HttpGet("GetPatientBookedSlots")]
+        public async Task<IActionResult> GetPatientBookedSlots(int patientId, int doctorId, DateTime appointmentDate)
+        {
+            var bookedSlots = await _appointmentService.GetPatientBookedSlots(patientId, doctorId, appointmentDate);
+            return Ok(bookedSlots);
+        }
+
+        [HttpGet("GetAvailableTimeSlots")]
+        public IActionResult GetAvailableTimeSlots(string range, int interval = 15)
+        {
+            try
+            {
+                var slots = TimeSlotHelper.BreakTimeRange(range, interval);
+                return Ok(slots);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
     }
 }

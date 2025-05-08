@@ -4,6 +4,7 @@ using DocBookAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DocBookAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250410202445_BookSlotColumn")]
+    partial class BookSlotColumn
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -153,9 +156,6 @@ namespace DocBookAPI.Migrations
                     b.Property<string>("Availability")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Bio")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<decimal?>("ConsultationFee")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
@@ -164,9 +164,6 @@ namespace DocBookAPI.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Hospital")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Qualification")
@@ -457,17 +454,21 @@ namespace DocBookAPI.Migrations
 
             modelBuilder.Entity("DocBookAPI.Models.Appointment", b =>
                 {
-                    b.HasOne("DocBookAPI.Models.Doctor", null)
+                    b.HasOne("DocBookAPI.Models.Doctor", "Doctor")
                         .WithMany("Appointments")
                         .HasForeignKey("DoctorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DocBookAPI.Models.Patient", null)
+                    b.HasOne("DocBookAPI.Models.Patient", "Patient")
                         .WithMany("Appointments")
                         .HasForeignKey("PatientId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Doctor");
+
+                    b.Navigation("Patient");
                 });
 
             modelBuilder.Entity("DocBookAPI.Models.Doctor", b =>
@@ -510,7 +511,7 @@ namespace DocBookAPI.Migrations
             modelBuilder.Entity("DocBookAPI.Models.Prescription", b =>
                 {
                     b.HasOne("DocBookAPI.Models.Appointment", "Appointment")
-                        .WithOne()
+                        .WithOne("Prescription")
                         .HasForeignKey("DocBookAPI.Models.Prescription", "AppointmentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -598,6 +599,12 @@ namespace DocBookAPI.Migrations
                         .IsRequired();
 
                     b.Navigation("Patient")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DocBookAPI.Models.Appointment", b =>
+                {
+                    b.Navigation("Prescription")
                         .IsRequired();
                 });
 
